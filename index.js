@@ -16,7 +16,7 @@ client.once('ready', async () => {
     // 1. Yayın Yapıyor (Streaming) Durumu
     client.user.setPresence({
         activities: [{
-            name: 'RUSHERS 🚀',
+            name: '.gg/rushers',
             type: ActivityType.Streaming,
             url: 'https://www.twitch.tv/discord'
         }],
