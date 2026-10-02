@@ -1,4 +1,4 @@
-const { Client, GatewayIntentBits, ActivityType } = require('discord.js');
+const { Client, GatewayIntentBits, ActivityType, EmbedBuilder } = require('discord.js');
 const { joinVoiceChannel } = require('@discordjs/voice');
 const config = require('./config.json');
 
@@ -18,12 +18,12 @@ client.once('ready', async () => {
         activities: [{
             name: 'RUSHERS 🚀',
             type: ActivityType.Streaming,
-            url: 'https://www.twitch.tv/discord' // Geçerli bir Twitch/YouTube adresi
+            url: 'https://www.twitch.tv/discord'
         }],
         status: 'online',
     });
 
-    // 2. Ses Kanalına Doğrudan Bağlanma (Fetch Yöntemi)
+    // 2. Ses Kanalına Bağlanma
     try {
         const channel = await client.channels.fetch(config.sesKanalId);
         if (channel && channel.isVoiceBased()) {
@@ -36,27 +36,50 @@ client.once('ready', async () => {
             });
             console.log(`Ses kanalına başarıyla bağlanıldı: ${channel.name}`);
         } else {
-            console.log('Belirtilen ID bir ses kanalı değil veya kanal bulunamadı!');
+            console.log('Belirtilen ID bir ses kanalı değil veya bulunamadı!');
         }
     } catch (err) {
         console.error('Ses kanalına bağlanırken hata oluştu:', err.message);
     }
 });
 
-// 3. Otomatik Rol Verme
+// 3. Sunucuya Katılan Kullanıcıya Otomatik Rol Verme ve SADECE DM Mesajı Gönderme
 client.on('guildMemberAdd', async (member) => {
+    const totalMembers = member.guild.memberCount;
+    let roleName = 'Belirtilen Rol';
+
+    // A) Otomatik Rol Verme
     try {
         const role = member.guild.roles.cache.get(config.rolId);
         if (role) {
             await member.roles.add(role);
-            console.log(`\({member.user.tag} sunucuya katıldı ve\){role.name} rolü verildi.`);
-        } else {
-            console.log('Verilecek rol bulunamadı! config.json içindeki rolId bilgisini kontrol edin.');
+            roleName = role.name;
+            console.log(`\({member.user.tag} kullanıcısına\){role.name} rolü verildi.`);
         }
     } catch (error) {
         console.error('Rol verilirken hata oluştu:', error);
     }
+
+    // B) Sadece DM (Özel Mesaj) Gönderme
+    try {
+        const dmEmbed = new EmbedBuilder()
+            .setColor('#5865F2')
+            .setTitle(`🎉 ${member.guild.name} Sunucusuna Hoş Geldin!`)
+            .setDescription(`Aramıza katıldığın için teşekkür ederiz ${member}!`)
+            .addFields(
+                { name: '🎭 Verilen Rol', value: `**${roleName}**`, inline: true },
+                { name: '📊 Sunucu Üye Sayısı', value: `Seninle birlikte **${totalMembers}** kişiyiz!`, inline: true }
+            )
+            .setThumbnail(member.user.displayAvatarURL({ dynamic: true }))
+            .setFooter({ text: 'RUSHERS - Keyifli vakit geçirmeni dileriz!' })
+            .setTimestamp();
+
+        await member.send({ embeds: [dmEmbed] });
+        console.log(`${member.user.tag} kullanıcısına DM mesajı gönderildi.`);
+    } catch (dmError) {
+        // Kullanıcının DM kutusu kapalıysa botun çökmemesi için
+        console.log(`${member.user.tag} kullanıcısının DM kutusu kapalı olduğu için mesaj iletilemedi.`);
+    }
 });
 
-// Render ortam değişkeni varsa onu, yoksa config içindeki token'ı kullanır
 client.login(process.env.BOT_TOKEN || config.token);
