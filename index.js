@@ -16,33 +16,30 @@ client.once('ready', async () => {
     // 1. Yayın Yapıyor (Streaming) Durumu
     client.user.setPresence({
         activities: [{
-            name: 'R U S H E R S',
+            name: 'RUSHERS 🚀',
             type: ActivityType.Streaming,
-            url: 'https://www.twitch.tv/discord' // Yayın ikonu için geçerli bir Twitch/YouTube bağlantısı
+            url: 'https://www.twitch.tv/discord' // Geçerli bir Twitch/YouTube adresi
         }],
         status: 'online',
     });
 
-    // 2. Ses Kanalına Bağlanma
+    // 2. Ses Kanalına Doğrudan Bağlanma (Fetch Yöntemi)
     try {
-        const guild = client.guilds.cache.first();
-        if (guild) {
-            const channel = guild.channels.cache.get(config.sesKanalId);
-            if (channel) {
-                joinVoiceChannel({
-                    channelId: channel.id,
-                    guildId: guild.id,
-                    adapterCreator: guild.voiceAdapterCreator,
-                    selfDeaf: true,
-                    selfMute: false
-                });
-                console.log(`Ses kanalına bağlanıldı: ${channel.name}`);
-            } else {
-                console.log('Ses kanalı bulunamadı! config.json dosyasındaki sesKanalId bilgisini kontrol edin.');
-            }
+        const channel = await client.channels.fetch(config.sesKanalId);
+        if (channel && channel.isVoiceBased()) {
+            joinVoiceChannel({
+                channelId: channel.id,
+                guildId: channel.guild.id,
+                adapterCreator: channel.guild.voiceAdapterCreator,
+                selfDeaf: true,
+                selfMute: false
+            });
+            console.log(`Ses kanalına başarıyla bağlanıldı: ${channel.name}`);
+        } else {
+            console.log('Belirtilen ID bir ses kanalı değil veya kanal bulunamadı!');
         }
     } catch (err) {
-        console.error('Sese bağlanırken hata oluştu:', err);
+        console.error('Ses kanalına bağlanırken hata oluştu:', err.message);
     }
 });
 
@@ -54,11 +51,12 @@ client.on('guildMemberAdd', async (member) => {
             await member.roles.add(role);
             console.log(`\({member.user.tag} sunucuya katıldı ve\){role.name} rolü verildi.`);
         } else {
-            console.log('Verilecek rol bulunamadı! config.json dosyasındaki rolId bilgisini kontrol edin.');
+            console.log('Verilecek rol bulunamadı! config.json içindeki rolId bilgisini kontrol edin.');
         }
     } catch (error) {
         console.error('Rol verilirken hata oluştu:', error);
     }
 });
 
+// Render ortam değişkeni varsa onu, yoksa config içindeki token'ı kullanır
 client.login(process.env.BOT_TOKEN || config.token);
